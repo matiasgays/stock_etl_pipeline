@@ -10,6 +10,8 @@ def run_script(script_name):
     subprocess.run(["python", script_path], check=True)
 
 from etl.extract import extract_from_api
+from etl.transform import transform_market_data
+from etl.load import load_to_bigquery
 
 # Default arguments for the DAG
 default_args = {
@@ -17,6 +19,8 @@ default_args = {
     "depends_on_past": False,
     "retries": 1,
 }
+
+project_id = "productos-320620"
 
 # Define the DAG
 with DAG(
@@ -30,26 +34,28 @@ with DAG(
 ) as dag:
 
     # Example of arguments to pass
-    api_url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo"
-    headers = {"Accept": "application/json"}
+    api_url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo" 
 
     extract_task = PythonOperator(
         task_id="extract",
         python_callable=extract_from_api,  # direct function call
         op_args=[api_url],
-        op_kwargs={"headers": headers},
     )
 
     transform_task = PythonOperator(
         task_id="transform",
-        python_callable=run_script,
-        op_args=["transform.py"],
+        python_callable=transform_market_data,
+        op_args=["{{ ti.xcom_pull(task_ids='extract') }}"],
     )
 
     load_task = PythonOperator(
         task_id="load",
-        python_callable=run_script,
-        op_args=["load.py"],
+        python_callable=load_to_bigquery,
+        op_args=[
+            "{{ ti.xcom_pull(task_ids='transform') }}",  # XCom pulled → rendered as str
+            project_id,
+        ],
+        op_kwargs={"if_exists": "replace"},
     )
 
     # Define dependencies: Extract → Transform → Load

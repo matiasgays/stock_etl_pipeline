@@ -1,16 +1,11 @@
 import os
 import pandas as pd
 import json
-# raw_data: dict
 
-def transform_market_data() -> pd.DataFrame:
-    # Extract and normalize the time series data
-    output_dir = os.path.dirname(__file__)
-    with open(os.path.join(output_dir, "response.json"), "r") as f:
-        raw_json = json.load(f)
+def transform_market_data(raw_str) -> pd.DataFrame:
+    raw_json = json.loads(raw_str)
     time_series = raw_json.get("Time Series (5min)", {})
     df = pd.DataFrame.from_dict(time_series, orient="index")
-    print(df.head())
     df.index.name = "timestamp"
     df.reset_index(inplace=True)
 
@@ -64,9 +59,14 @@ def transform_market_data() -> pd.DataFrame:
     df["month"] = df["timestamp"].dt.month
     df["day"] = df["timestamp"].dt.day
     df["day_of_week"] = df["timestamp"].dt.day_name()
+    print(df.head())
 
     return df
 
 def transform():
+    # Extract and normalize the time series data
+    output_dir = os.path.dirname(__file__)
+    #with open(os.path.join(output_dir, "response.json"), "r") as f:
+    #    raw_json = json.load(f)
     print("Transforming data...")
     return
