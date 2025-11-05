@@ -1,0 +1,33 @@
+{"timestamp":"2025-11-04T11:45:51.867649Z","level":"info","event":"DAG bundles loaded: dags-folder, example_dags","logger":"airflow.dag_processing.bundles.manager.DagBundlesManager","filename":"manager.py","lineno":179}
+{"timestamp":"2025-11-04T11:45:51.871809Z","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/etl_dag.py","logger":"airflow.models.dagbag.DagBag","filename":"dagbag.py","lineno":593}
+{"timestamp":"2025-11-04T11:45:51.944429Z","level":"warning","event":"The `airflow.operators.python.PythonOperator` attribute is deprecated. Please use `'airflow.providers.standard.operators.python.PythonOperator'`.","category":"DeprecatedImportWarning","filename":"/opt/airflow/dags/etl_dag.py","lineno":2,"logger":"py.warnings"}
+{"timestamp":"2025-11-04T11:45:52.034665Z","level":"info","event":"Task instance is in running state","logger":"task.stdout"}
+{"timestamp":"2025-11-04T11:45:52.035486Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.QUEUED","logger":"task.stdout"}
+{"timestamp":"2025-11-04T11:45:52.036038Z","level":"info","event":"Current task name:extract","logger":"task.stdout"}
+{"timestamp":"2025-11-04T11:45:52.036640Z","level":"info","event":"Dag name:etl_pipeline","logger":"task.stdout"}
+{"timestamp":"2025-11-04T11:45:52.118209Z","level":"info","event":"Done. Returned value was: None","logger":"airflow.task.operators.airflow.providers.standard.operators.python.PythonOperator","filename":"python.py","lineno":218}
+{"timestamp":"2025-11-04T11:45:52.142447Z","level":"info","event":"Task instance in success state","logger":"task.stdout"}
+{"timestamp":"2025-11-04T11:45:52.143295Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.RUNNING","logger":"task.stdout"}
+{"timestamp":"2025-11-04T11:45:52.144042Z","level":"info","event":"Task operator:<Task(PythonOperator): extract>","logger":"task.stdout"}
+{"timestamp":"2025-11-04T18:54:09.644748Z","level":"info","event":"DAG bundles loaded: dags-folder, example_dags","logger":"airflow.dag_processing.bundles.manager.DagBundlesManager","filename":"manager.py","lineno":179}
+{"timestamp":"2025-11-04T18:54:09.646228Z","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/etl_dag.py","logger":"airflow.models.dagbag.DagBag","filename":"dagbag.py","lineno":593}
+{"timestamp":"2025-11-04T18:54:09.669552Z","level":"warning","event":"The `airflow.operators.python.PythonOperator` attribute is deprecated. Please use `'airflow.providers.standard.operators.python.PythonOperator'`.","category":"DeprecatedImportWarning","filename":"/opt/airflow/dags/etl_dag.py","lineno":2,"logger":"py.warnings"}
+{"timestamp":"2025-11-04T18:54:09.725424Z","level":"info","event":"Task instance is in running state","logger":"task.stdout"}
+{"timestamp":"2025-11-04T18:54:09.726296Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.QUEUED","logger":"task.stdout"}
+{"timestamp":"2025-11-04T18:54:09.726904Z","level":"info","event":"Current task name:extract","logger":"task.stdout"}
+{"timestamp":"2025-11-04T18:54:09.727502Z","level":"info","event":"Dag name:etl_pipeline","logger":"task.stdout"}
+{"timestamp":"2025-11-04T18:54:09.846732Z","level":"info","event":"Done. Returned value was: None","logger":"airflow.task.operators.airflow.providers.standard.operators.python.PythonOperator","filename":"python.py","lineno":218}
+{"timestamp":"2025-11-04T18:54:09.877938Z","level":"info","event":"Task instance in success state","logger":"task.stdout"}
+{"timestamp":"2025-11-04T18:54:09.878412Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.RUNNING","logger":"task.stdout"}
+{"timestamp":"2025-11-04T18:54:09.878976Z","level":"info","event":"Task operator:<Task(PythonOperator): extract>","logger":"task.stdout"}
+{"timestamp":"2025-11-05T10:29:47.876124Z","level":"info","event":"DAG bundles loaded: dags-folder, example_dags","logger":"airflow.dag_processing.bundles.manager.DagBundlesManager","filename":"manager.py","lineno":179}
+{"timestamp":"2025-11-05T10:29:47.881505Z","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/etl_dag.py","logger":"airflow.models.dagbag.DagBag","filename":"dagbag.py","lineno":593}
+{"timestamp":"2025-11-05T10:29:47.940626Z","level":"warning","event":"The `airflow.operators.python.PythonOperator` attribute is deprecated. Please use `'airflow.providers.standard.operators.python.PythonOperator'`.","category":"DeprecatedImportWarning","filename":"/opt/airflow/dags/etl_dag.py","lineno":2,"logger":"py.warnings"}
+{"timestamp":"2025-11-05T10:29:48.025621Z","level":"info","event":"Task instance is in running state","logger":"task.stdout"}
+{"timestamp":"2025-11-05T10:29:48.026296Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.QUEUED","logger":"task.stdout"}
+{"timestamp":"2025-11-05T10:29:48.026724Z","level":"info","event":"Current task name:extract","logger":"task.stdout"}
+{"timestamp":"2025-11-05T10:29:48.027133Z","level":"info","event":"Dag name:etl_pipeline","logger":"task.stdout"}
+{"timestamp":"2025-11-05T10:29:48.147012Z","level":"info","event":"Done. Returned value was: None","logger":"airflow.task.operators.airflow.providers.standard.operators.python.PythonOperator","filename":"python.py","lineno":218}
+{"timestamp":"2025-11-05T10:29:48.178103Z","level":"info","event":"Task instance in success state","logger":"task.stdout"}
+{"timestamp":"2025-11-05T10:29:48.178622Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.RUNNING","logger":"task.stdout"}
+{"timestamp":"2025-11-05T10:29:48.179004Z","level":"info","event":"Task operator:<Task(PythonOperator): extract>","logger":"task.stdout"}
