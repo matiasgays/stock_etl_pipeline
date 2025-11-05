@@ -1,15 +1,27 @@
-import requests
-import pandas as pd
+import os
 import json
-
-def extract():
-    print("Extracting data...")
-    return
+import requests
 
 def extract_from_api(url: str, headers: dict = None) -> dict:
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     data = response.json()
-    with open("/home/mello/stock/src/stock/extract/data/response.json", "w") as f:
+
+    # Define dynamic output path
+    output_dir = os.path.dirname(__file__)
+    output_path = os.path.join(output_dir, "response.json")
+
+    # Ensure the folder exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Save DataFrame to JSON
+    with open(output_path, "w") as f:
         json.dump(data, f, indent=4)
+
+    print(f"✅ Data saved to: {output_path}")
     return data
+
+
+def extract():
+    print("Extracting data...")
+    return

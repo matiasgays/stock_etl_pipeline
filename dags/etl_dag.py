@@ -9,6 +9,8 @@ def run_script(script_name):
     script_path = os.path.join(os.path.dirname(__file__), "etl", script_name)
     subprocess.run(["python", script_path], check=True)
 
+from etl.extract import extract_from_api
+
 # Default arguments for the DAG
 default_args = {
     "owner": "airflow",
@@ -27,10 +29,15 @@ with DAG(
     tags=["ETL", "example"],
 ) as dag:
 
+    # Example of arguments to pass
+    api_url = "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo"
+    headers = {"Accept": "application/json"}
+
     extract_task = PythonOperator(
         task_id="extract",
-        python_callable=run_script,
-        op_args=["extract.py"],
+        python_callable=extract_from_api,  # direct function call
+        op_args=[api_url],
+        op_kwargs={"headers": headers},
     )
 
     transform_task = PythonOperator(
