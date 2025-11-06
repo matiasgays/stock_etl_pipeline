@@ -61,7 +61,7 @@ def transform_market_data(raw_str) -> pd.DataFrame:
     df["day_of_week"] = df["timestamp"].dt.day_name()
     print(df.head())
 
-    return df
+    return df.to_json(orient="records")
 
 def transform():
     # Extract and normalize the time series data

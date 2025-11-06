@@ -29,7 +29,7 @@ with DAG(
     description="Run Extract, Transform, and Load scripts in sequence",
     schedule="@daily",  # ⏰ runs every 5 minutes
     start_date=datetime(2025, 11, 4),
-    catchup=True,
+    catchup=False,
     tags=["ETL", "example"],
 ) as dag:
 

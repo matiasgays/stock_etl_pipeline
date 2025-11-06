@@ -1,14 +1,22 @@
 import os
+import pandas as pd
 from google.cloud import bigquery
 from google.oauth2 import service_account
 from dotenv import load_dotenv
 
-def load_to_bigquery(df, project_id):
+def load_to_bigquery(df_json_str, project_id):
+
+    if not df_json_str:
+        raise ValueError("Received empty data from XCom")
+
+    # ✅ Decode JSON into DataFrame
+    df = pd.read_json(df_json_str, orient="records")
 
     # Path to your credentials file
     #key_path = "/home/mello/stock/src/stock/.env/service_account.json"
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))  # go up from dags/etl/ to project root
-    service_account_path = os.path.join(base_dir, "config", "service_account.json")
+    google_cred_folder = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    service_account_path = os.path.join(base_dir, google_cred_folder)
 
     print("Service account path:", service_account_path)
 
@@ -39,10 +47,11 @@ def load_to_bigquery(df, project_id):
 
     # Run a query
     query = "SELECT * FROM `productos-320620.sales_dataset.sales`"
-    df = client.query(query).to_dataframe()
+    df_stored = client.query(query).to_dataframe()
 
-    print(df)
+    print(df_stored.head())
 
 def load():
     print("Loading data...")
     return
+
