@@ -11,3 +11,4 @@ wheels/
 config/service_account.jsonlogs/
 logs/
 *.log
+config/service_account.json
