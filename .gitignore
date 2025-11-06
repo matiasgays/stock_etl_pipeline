@@ -8,7 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
-config/service_account.jsonlogs/
+config/service_account.json
 logs/
 *.log
-config/service_account.json
