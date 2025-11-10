@@ -13,7 +13,6 @@ sys.path.append(str(root_dir))
 
 from dags.etl.load import load_to_bigquery
 
-
 class FakeJob:
     def __init__(self, output_rows=0, errors=None):
         self.output_rows = output_rows
