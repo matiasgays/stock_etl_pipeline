@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - test-pr
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Create and activate virtual environment
+        run: |
+          uv venv
+          source .venv/bin/activate
+
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          if [ -f requirements.txt ]; then
+            uv pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then
+            uv pip install .
+          fi
+
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          uv run pytest -v
