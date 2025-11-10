@@ -12,52 +12,41 @@ sys.path.append(str(root_dir))
 from dags.etl.extract import extract_from_api
 
 
+class _FakeResponse:
+    def __init__(self, data=None, raise_error=False):
+        self._data = data or {}
+        self._raise = raise_error
+
+    def raise_for_status(self):
+        if self._raise:
+            raise requests.HTTPError("bad")
+
+    def json(self):
+        return self._data
+
+
+def _make_get(json_data=None, raise_error=False, expected_url=None, expected_headers=None):
+    def _get(url, headers=None):
+        if expected_url is not None:
+            assert url == expected_url
+        if expected_headers is not None:
+            assert headers == expected_headers
+        return _FakeResponse(json_data, raise_error)
+    return _get
+
+
 def test_extract_from_api_success(monkeypatch):
-    class FakeResponse:
-        def raise_for_status(self):
-            print("[DEBUG] FakeResponse.raise_for_status() called — no error")
-            return None
+    monkeypatch.setattr(
+        "dags.etl.extract.requests.get",
+        _make_get(json_data={"data": [1, 2, 3]}, expected_url="http://example.com/data", expected_headers={"a": "b"}),
+    )
 
-        def json(self):
-            data = {"data": [1, 2, 3]}
-            print(f"[DEBUG] FakeResponse.json() returning: {data}")
-            return data
-
-    def fake_get(url, headers=None):
-        print(f"[DEBUG] fake_get called with url={url}, headers={headers}")
-        assert url == "http://example.com/data"
-        return FakeResponse()
-
-    monkeypatch.setattr("dags.etl.extract.requests.get", fake_get)
-
-    print("[DEBUG] Calling extract_from_api()...")
     out = extract_from_api("http://example.com/data", headers={"a": "b"})
-    print(f"[DEBUG] extract_from_api() returned raw output: {out}")
-
-    parsed = json.loads(out)
-    print(f"[DEBUG] Parsed JSON: {parsed}")
-
-    assert parsed == {"data": [1, 2, 3]}
-    print("[DEBUG] ✅ test_extract_from_api_success passed successfully")
+    assert json.loads(out) == {"data": [1, 2, 3]}
 
 
 def test_extract_from_api_raises_on_http_error(monkeypatch):
-    class FakeResponse:
-        def raise_for_status(self):
-            print("[DEBUG] FakeResponse.raise_for_status() raising HTTPError")
-            raise requests.HTTPError("bad")
+    monkeypatch.setattr("dags.etl.extract.requests.get", _make_get(raise_error=True))
 
-        def json(self):
-            print("[DEBUG] FakeResponse.json() called — returning empty dict")
-            return {}
-
-    def fake_get(url, headers=None):
-        print(f"[DEBUG] fake_get called with url={url}, headers={headers}")
-        return FakeResponse()
-
-    monkeypatch.setattr("dags.etl.extract.requests.get", fake_get)
-
-    print("[DEBUG] Expecting HTTPError from extract_from_api()...")
     with pytest.raises(requests.HTTPError):
         extract_from_api("http://example.com/data")
-    print("[DEBUG] ✅ test_extract_from_api_raises_on_http_error passed successfully")
