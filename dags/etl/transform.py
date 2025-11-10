@@ -36,8 +36,11 @@ def transform_market_data(raw_str) -> pd.DataFrame:
         df = df.rename(columns={"time": "timestamp"})
     
     # Clean timestamp
-    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-    df = df.dropna(subset=["timestamp"]).sort_values("timestamp")
+    df["timestamp"] = pd.to_datetime(df["timestamp"], format="%Y-%m-%d %H:%M:%S", errors="coerce")
+    df = df.dropna(subset=["timestamp"])
+
+    # Sort chronologically (oldest → newest)
+    df = df.sort_values(by="timestamp", ascending=True).reset_index(drop=True)
 
     # Convert numeric columns safely
     numeric_cols = ["open", "high", "low", "close", "volume"]

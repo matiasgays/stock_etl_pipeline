@@ -1,57 +1,88 @@
 import os
+import logging
+from pathlib import Path
+from typing import Optional
+
 import pandas as pd
 from google.cloud import bigquery
 from google.oauth2 import service_account
 from dotenv import load_dotenv
 
-def load_to_bigquery(df_json_str, project_id):
+load_dotenv()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+
+def load_to_bigquery(
+    df_json_str: str,
+    project_id: str,
+    dataset_name: str = "sales_dataset",
+    table_name: str = "sales",
+    location: str = "US",
+    credentials_env_var: str = "GOOGLE_APPLICATION_CREDENTIALS",
+    timeout: int = 300,
+) -> int:
+    """
+    Load a JSON records string into BigQuery. Returns number of rows loaded.
+    Raises for missing credentials, empty input, or load failures.
+    """
 
     if not df_json_str:
         raise ValueError("Received empty data from XCom")
 
-    # ✅ Decode JSON into DataFrame
+    # decode JSON into DataFrame (expects records orient)
     df = pd.read_json(df_json_str, orient="records")
+    # Sort the dataframe by timestamp before loading
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = df.sort_values(by="timestamp", ascending=True)
 
-    # Path to your credentials file
-    #key_path = "/home/mello/stock/src/stock/.env/service_account.json"
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))  # go up from dags/etl/ to project root
-    google_cred_folder = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    service_account_path = os.path.join(base_dir, google_cred_folder)
+    # Resolve credentials path: allow absolute env var or relative to project root
+    base_dir = Path(__file__).resolve().parents[2]  # go up from dags/etl/ to project root
+    cred_env_val = os.getenv(credentials_env_var)
+    if not cred_env_val:
+        raise EnvironmentError(f"{credentials_env_var} is not set")
 
-    print("Service account path:", service_account_path)
+    cred_path = Path(cred_env_val)
+    if not cred_path.is_absolute():
+        cred_path = base_dir.joinpath(cred_path)
 
-    # Create credentials object
-    credentials = service_account.Credentials.from_service_account_file(service_account_path)
-    print(credentials)
-    
+    if not cred_path.exists():
+        raise FileNotFoundError(f"Service account file not found at: {cred_path}")
+
+    logger.info("Using service account file: %s", cred_path)
+
+    credentials = service_account.Credentials.from_service_account_file(str(cred_path))
     client = bigquery.Client(credentials=credentials, project=project_id)
 
-    # Dataset ID
-    dataset_id = f"{project_id}.sales_dataset"
-    # Now load the data
-    table_id = f"{dataset_id}.sales"
+    dataset_id = f"{project_id}.{dataset_name}"
+    table_id = f"{dataset_id}.{table_name}"
 
-    # Create the dataset if it doesn’t exist
+    # Ensure dataset exists
     dataset = bigquery.Dataset(dataset_id)
-    dataset.location = "US"  # or your region, e.g. "southamerica-east1"
+    dataset.location = location
+    client.create_dataset(dataset, exists_ok=True)
+    logger.info("Dataset ensured: %s (location=%s)", dataset_id, location)
 
-    dataset = client.create_dataset(dataset, exists_ok=True)
-    print(f"Dataset {dataset.dataset_id} created or already exists.")
+    job_config = bigquery.LoadJobConfig()
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
 
-    job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
-
+    # Load dataframe (for very large data consider chunking or using GCS staging)
     job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
-    job.result()
+    job.result(timeout=timeout)
+    if job.errors:
+        raise RuntimeError(f"Load job failed: {job.errors}")
 
-    print(f"Loaded {job.output_rows} rows into {table_id}.")
+    loaded_rows = int(job.output_rows or 0)
+    logger.info("Loaded %d rows into %s", loaded_rows, table_id)
 
-    # Run a query
-    query = "SELECT * FROM `productos-320620.sales_dataset.sales`"
-    df_stored = client.query(query).to_dataframe()
+    # sample verification (only limited rows)
+    sample_query = "SELECT * FROM `productos-320620.sales_dataset.sales`"
+    df_sample = client.query(sample_query).to_dataframe()
+    logger.info("Sample rows:\n%s", df_sample.head())
 
-    print(df_stored.head())
+    return loaded_rows
+
 
 def load():
-    print("Loading data...")
+    logger.info("Loading data... (no-op helper)")
     return
-

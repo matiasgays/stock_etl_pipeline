@@ -10,3 +10,5 @@ requests==2.32.4
 six==1.17.0
 tzdata==2025.2
 urllib3==2.2.3
+
+pytest==7.4.0

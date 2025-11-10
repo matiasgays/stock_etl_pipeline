@@ -10,5 +10,8 @@ wheels/
 .venv
 .env
 config/service_account.json
+
+# Airflow
 logs/
+dags/__pycache__/
 *.log
