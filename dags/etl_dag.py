@@ -17,16 +17,16 @@ default_args = {
     "execution_timeout": timedelta(seconds=300),
 }
 
-config = Variable.get("API_CONFIG", deserialize_json=True)
+API_CONFIG = Variable.get("API_CONFIG", deserialize_json=True)
+GCP_SERVICE_ACCOUNT = Variable.get("GCP_SERVICE_ACCOUNT", deserialize_json=True)
+GCP_BIGQUERY_CONFIG = Variable.get("GCP_BIGQUERY_CONFIG", deserialize_json=True)
 
 API_ENDPOINT = (
-    f"{config['url']}?function={config['function']}"
-    f"&symbol={config['symbol']}"
-    f"&interval={config['interval']}"
-    f"&apikey={config['key']}"
+    f"{API_CONFIG['url']}?function={API_CONFIG['function']}"
+    f"&symbol={API_CONFIG['symbol']}"
+    f"&interval={API_CONFIG['interval']}"
+    f"&apikey={API_CONFIG['key']}"
 )
-
-GCP_PROJECT_ID = config["project_id"]
 
 # Define the DAG
 with DAG(
@@ -57,7 +57,8 @@ with DAG(
         python_callable=load_to_bigquery,
         op_args=[
             "{{ ti.xcom_pull('transform') }}",
-            GCP_PROJECT_ID,
+            GCP_SERVICE_ACCOUNT,
+            GCP_BIGQUERY_CONFIG
         ],
         op_kwargs={"if_exists": "replace"},
     )

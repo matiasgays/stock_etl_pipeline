@@ -14,32 +14,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install uv
-        run: pip install uv
-
-      - name: Create and activate virtual environment
-        run: |
-          uv venv
-          source .venv/bin/activate
-
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: |
-          source .venv/bin/activate
+          python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
-            uv pip install -r requirements.txt
+            pip install -r requirements.txt
           elif [ -f pyproject.toml ]; then
-            uv pip install .
+            pip install .
           fi
 
+      # 4️⃣ Run tests
       - name: Run tests
         run: |
-          source .venv/bin/activate
-          uv run pytest -v
+          pytest -v
