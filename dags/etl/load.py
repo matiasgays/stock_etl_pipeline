@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -14,7 +15,7 @@ logger.setLevel(logging.INFO)
 
 
 def load_to_bigquery(
-    df_json_str: str,
+    file_path: str,
     project_id: str,
     dataset_name: str = "sales_dataset",
     table_name: str = "sales",
@@ -26,12 +27,10 @@ def load_to_bigquery(
     Load a JSON records string into BigQuery. Returns number of rows loaded.
     Raises for missing credentials, empty input, or load failures.
     """
+    with open(file_path, "r") as f:
+        records = json.load(f)
 
-    if not df_json_str:
-        raise ValueError("Received empty data from XCom")
-
-    # decode JSON into DataFrame (expects records orient)
-    df = pd.read_json(df_json_str, orient="records")
+    df = pd.DataFrame(records)
     # Sort the dataframe by timestamp before loading
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.sort_values(by="timestamp", ascending=True)

@@ -2,8 +2,9 @@ import os
 import pandas as pd
 import json
 
-def transform_market_data(raw_str) -> pd.DataFrame:
-    raw_json = json.loads(raw_str)
+def transform_market_data(input_path: str) -> str:
+    with open(input_path, "r") as f:
+        raw_json = json.load(f)
     time_series = raw_json.get("Time Series (5min)", {})
     df = pd.DataFrame.from_dict(time_series, orient="index")
     df.index.name = "timestamp"
@@ -62,14 +63,15 @@ def transform_market_data(raw_str) -> pd.DataFrame:
     df["month"] = df["timestamp"].dt.month
     df["day"] = df["timestamp"].dt.day
     df["day_of_week"] = df["timestamp"].dt.day_name()
-    print(df.head())
 
-    return df.to_json(orient="records")
+    # Save transformed data
+    output_path = input_path.replace("extract_", "transform_")
+    
+    json_str = df.to_json(orient="records")
 
-def transform():
-    # Extract and normalize the time series data
-    output_dir = os.path.dirname(__file__)
-    #with open(os.path.join(output_dir, "response.json"), "r") as f:
-    #    raw_json = json.load(f)
-    print("Transforming data...")
-    return
+    # Write directly as text
+    with open(output_path, "w") as f: 
+        f.write(json_str)
+
+    print(f"Transform saved → {output_path}")
+    return output_path

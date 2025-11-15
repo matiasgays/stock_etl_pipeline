@@ -1,26 +1,20 @@
-import os
 import json
 import requests
+import os
+from datetime import datetime, timezone
 
-def extract_from_api(url: str, headers: dict = None) -> dict:
+def extract_from_api(url: str, headers: dict = None) -> str:
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    data = response.json()
-    return json.dumps(data)
+    response_json = response.json()
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    base_dir = "/opt/airflow/data"
+    os.makedirs(base_dir, exist_ok=True)
+    
+    file_path = os.path.join(base_dir, f"extract_{timestamp}.json")
 
+    with open(file_path, "w") as f:
+        json.dump(response_json, f, indent=4)
 
-def extract():
-    # Define dynamic output path
-    output_dir = os.path.dirname(__file__)
-    output_path = os.path.join(output_dir, "response.json")
-
-    # Ensure the folder exists
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Save DataFrame to JSON
-    #with open(output_path, "w") as f:
-    #    json.dump(data, f, indent=4)
-
-    print(f"✅ Data saved to: {output_path}")
-    print("Extracting data...")
-    return
+    print(f"Extract saved → {file_path}")
+    return file_path
