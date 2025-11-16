@@ -14,12 +14,11 @@ dependencies = [
 ]
 
 [project.scripts]
-my-test = "src_my_test.main:main"
+my-test = "my_test.main:main"
 
 [build-system]
 requires = ["uv_build>=0.9.7,<0.10.0"]
 build-backend = "uv_build"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["src_my_test"]
+[tool.uv]
+src = ["src"]

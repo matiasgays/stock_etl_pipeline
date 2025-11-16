@@ -2,33 +2,60 @@ name: CI
 
 on:
   push:
-    branches:
-      - master
-      - test-pr
+    branches: [master, test-pr]
   pull_request:
-    branches:
-      - master
+    branches: [master]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
+      # -------------------------
+      # 1. Checkout repository
+      # -------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # -------------------------
+      # 2. Set up Python
+      # -------------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Install dependencies
+      # -------------------------
+      # 3. Install uv
+      # -------------------------
+      - name: Install uv
+        run: pip install uv
+
+      # -------------------------
+      # 4. Create venv
+      # -------------------------
+      - name: Create and activate virtual environment
+        run: uv venv
+
+      # -------------------------
+      # 5. Install dependencies + project
+      # -------------------------
+      - name: Install dependencies and package
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest mock
+          source .venv/bin/activate
 
+          # Install external dependencies
+          if [ -f requirements.txt ]; then
+            uv pip install -r requirements.txt
+          fi
+
+          # Install your local package defined in pyproject.toml
+          uv pip install .
+
+      # -------------------------
+      # 6. Run tests
+      # -------------------------
       - name: Run tests
-        env:
-          PYTHONPATH: ${{ github.workspace }}
-        run: pytest -v tests/
+        run: |
+          source .venv/bin/activate
+          uv run pytest -v
