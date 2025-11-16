@@ -1,26 +1,46 @@
-import os
 import json
+import logging
+import os
 import requests
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional, Dict
 
-def extract_from_api(url: str, headers: dict = None) -> dict:
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    data = response.json()
-    return json.dumps(data)
+# ---- Setup logger ----
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
+def extract_from_api(url: str, headers: Optional[Dict[str, str]] = None, base_dir: str = "/opt/airflow/data") -> str:
+    """
+    Extract data from an API and save it as a JSON file.
 
-def extract():
-    # Define dynamic output path
-    output_dir = os.path.dirname(__file__)
-    output_path = os.path.join(output_dir, "response.json")
+    Args:
+        url: API endpoint to request data from.
+        headers: Optional HTTP headers.
+        base_dir: Directory to save extracted JSON files.
 
-    # Ensure the folder exists
-    os.makedirs(output_dir, exist_ok=True)
+    Returns:
+        Path to the saved JSON file.
+    """
+    # ---- 1. Make API Request ----
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        response_json = response.json()
+    except requests.RequestException as e:
+        logger.error("API request failed: %s", e)
+        raise
 
-    # Save DataFrame to JSON
-    #with open(output_path, "w") as f:
-    #    json.dump(data, f, indent=4)
+    # ---- 2. Ensure base directory exists ----
+    Path(base_dir).mkdir(parents=True, exist_ok=True)
 
-    print(f"✅ Data saved to: {output_path}")
-    print("Extracting data...")
-    return
+    # --- 3. Generate timestamped file path ----
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    file_path = Path(base_dir) / f"extract_{timestamp}.json"
+
+    # ---- 4. Save JSON to file ----
+    with open(file_path, "w") as f:
+        json.dump(response_json, f, indent=4)
+
+    logger.info("Extract saved → %s", file_path)
+    return str(file_path)
