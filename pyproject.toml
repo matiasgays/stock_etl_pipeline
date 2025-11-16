@@ -1,5 +1,5 @@
 [project]
-name = "my-test"
+name = "stock_etl_pipeline"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-my-test = "my_test.main:main"
+stock_etl_pipeline = "stock_etl_pipeline.main:main"
 
 [build-system]
 requires = ["uv_build>=0.9.7,<0.10.0"]
