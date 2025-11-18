@@ -14,3 +14,6 @@ wheels/
 logs/
 dags/__pycache__/
 *.log
+
+Service account files
+gcp_credentials.json

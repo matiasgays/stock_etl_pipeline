@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 def load_to_bigquery(
     file_path: str,
-    gcp_service_account: dict,
+    gcp_service_account,
     gcp_bigquery_config: dict,
     timeout: Optional[int] = 300,
 ) -> int:
@@ -30,9 +30,15 @@ def load_to_bigquery(
     """
 
     # ---- 1. Credentials ----
-    credentials = service_account.Credentials.from_service_account_info(
-        gcp_service_account
-    )
+  
+    print(gcp_service_account)
+    if isinstance(gcp_service_account, str):
+        gcp_service_account = json.loads(gcp_service_account)
+    
+    gcp_service_account["private_key"] = gcp_service_account["private_key"].replace("\\n", "\n")
+
+    credentials = service_account.Credentials.from_service_account_info(gcp_service_account)
+    
     project = gcp_service_account.get("project_id")
     if not project:
         raise ValueError("Service account must include 'project_id'.")

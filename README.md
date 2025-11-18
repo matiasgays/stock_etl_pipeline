@@ -56,6 +56,10 @@ This project implements an ETL (Extract, Transform, Load) pipeline for processin
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    pip install -r requirements.txt
    ```
+3. Create .env file
+   ```bash
+   echo "AIRFLOW_UID=50000" > .env
+   ```
 
 ### Running the Pipeline
 

@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 import os
+import json
 
 from src.stock_etl_pipeline.etl.extract import extract_from_api
 from src.stock_etl_pipeline.etl.transform import transform_market_data
@@ -16,9 +17,10 @@ default_args = {
     "execution_timeout": timedelta(seconds=300),
 }
 
-API_CONFIG = Variable.get("API_CONFIG", deserialize_json=True)
-GCP_SERVICE_ACCOUNT = Variable.get("GCP_SERVICE_ACCOUNT", deserialize_json=True)
-GCP_BIGQUERY_CONFIG = Variable.get("GCP_BIGQUERY_CONFIG", deserialize_json=True)
+GCP_CREDENTIALS = os.getenv("GCP_CREDENTIALS")
+print(GCP_CREDENTIALS)
+BQ_DATASET_CONFIG = json.loads(os.getenv("STOCK_DATASET_CONFIG"))
+API_CONFIG = json.loads(os.getenv("ALPHA_VANTAGE_CONFIG"))
 
 API_ENDPOINT = (
     f"{API_CONFIG['url']}?function={API_CONFIG['function']}"
@@ -56,8 +58,8 @@ with DAG(
         python_callable=load_to_bigquery,
         op_args=[
             "{{ ti.xcom_pull('transform') }}",
-            GCP_SERVICE_ACCOUNT,
-            GCP_BIGQUERY_CONFIG
+            GCP_CREDENTIALS,
+            BQ_DATASET_CONFIG
         ],
         op_kwargs={"if_exists": "replace"},
     )
