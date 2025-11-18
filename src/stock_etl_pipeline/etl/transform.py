@@ -47,7 +47,7 @@ def transform_market_data(input_path: str) -> str:
     
     # ---- 3. Timestamp Handling ----
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-    df = df.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
+    df = df.dropna(subset=["timestamp"]).sort_values("timestamp")
 
     # ---- 4. Convert Numeric Columns ----
     numeric_cols = ["open", "high", "low", "close", "volume"]
@@ -71,10 +71,11 @@ def transform_market_data(input_path: str) -> str:
     # ---- 7. Save Transformed JSON ----
     output_path = input_path.replace("extract_", "transform_")
     
-    json_str = df.to_json(orient="records")
+    json_str = df.to_json(orient="records", indent=4)
 
     with open(output_path, "w") as f: 
         f.write(json_str)
 
     logger.info("Transform saved → %s", output_path)
+    print(json_str[:500])  # Print first 500 characters of transformed JSON
     return output_path

@@ -4,9 +4,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
-from dags.etl.extract import extract_from_api
-from dags.etl.transform import transform_market_data
-from dags.etl.load import load_to_bigquery
+from src.stock_etl_pipeline.etl.extract import extract_from_api
+from src.stock_etl_pipeline.etl.transform import transform_market_data
+from src.stock_etl_pipeline.etl.load import load_to_bigquery
 
 # ---- Sample API response ----
 SAMPLE_API_RESPONSE = {
@@ -59,7 +59,7 @@ def tmp_json(tmp_path):
 
 
 # ---- Extract Tests ----
-@patch("dags.etl.extract.requests.get")
+@patch("src.stock_etl_pipeline.etl.extract.requests.get")
 def test_extract_from_api(mock_get, tmp_path):
     """Test API extraction saves JSON correctly."""
     mock_response = MagicMock()
@@ -89,8 +89,8 @@ def test_transform_market_data(tmp_json):
 
 
 # ---- Load Tests ----
-@patch("dags.etl.load.bigquery.Client")
-@patch("dags.etl.load.service_account.Credentials.from_service_account_info")
+@patch("src.stock_etl_pipeline.etl.load.bigquery.Client")
+@patch("src.stock_etl_pipeline.etl.load.service_account.Credentials.from_service_account_info")
 def test_load_to_bigquery(mock_creds, mock_bq_client, tmp_json):
     """Test loading transformed JSON into BigQuery (mocked)."""
     mock_creds.return_value = "fake_creds"

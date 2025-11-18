@@ -56,7 +56,9 @@ def load_to_bigquery(
         records = json.load(f)
 
     df = pd.DataFrame(records)
-
+    
+    # 1. Convert the original string column to Pandas datetime64[ns]
+    # 'format=TIME_FORMAT' forces Pandas to use a specific parsing method.
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         df = df.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)

@@ -1,13 +1,12 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
-from etl.extract import extract_from_api
-from etl.transform import transform_market_data
-from etl.load import load_to_bigquery
+from src.stock_etl_pipeline.etl.extract import extract_from_api
+from src.stock_etl_pipeline.etl.transform import transform_market_data
+from src.stock_etl_pipeline.etl.load import load_to_bigquery
 from airflow.models import Variable
-from datetime import timedelta
 
 # Default arguments for the DAG
 default_args = {
@@ -34,9 +33,9 @@ with DAG(
     default_args=default_args,
     description="Run Extract, Transform, and Load scripts in sequence",
     schedule="@daily",
-    start_date=datetime(2025, 11, 13),
+    start_date=datetime(2025, 11, 14),
     catchup=False,
-    tags=["ETL", "example"],
+    tags=["ETL"],
     max_active_runs=1,  # Prevent parallel runs
 ) as dag:
 
