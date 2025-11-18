@@ -14,12 +14,15 @@ This project implements an ETL (Extract, Transform, Load) pipeline for processin
 ## Project Structure
 ```
 .
-├── dags/
+├── src/stock_etl_pipeline
 │   ├── etl/
 │   │   ├── extract.py       # Extract data from API
 │   │   ├── transform.py     # Transform raw data
 │   │   ├── load.py          # Load data into BigQuery
-│   └── etl_dag.py           # Airflow DAG definition
+│   ├── main.py           # Airflow DAG definition
+│   └── __init__.py           # Airflow DAG definition
+├── dags/
+│   ├── etl_dag.py      # Unit tests for extract module
 ├── tests/
 │   ├── test_extract.py      # Unit tests for extract module
 │   ├── test_transform.py    # Unit tests for transform module
@@ -38,6 +41,8 @@ This project implements an ETL (Extract, Transform, Load) pipeline for processin
 - Python 3.9+
 - Docker (optional, for containerized deployment)
 - Google Cloud credentials for BigQuery
+- Google Cloud Database name strcuture
+- Alpha Vantage API key
 
 ### Installation
 1. Clone the repository:
@@ -53,13 +58,31 @@ This project implements an ETL (Extract, Transform, Load) pipeline for processin
    ```
 
 ### Running the Pipeline
-1. Set up your Google Cloud credentials:
+
+This project requires specific Airflow Variables to be configured.  
+You must load them in **JSON format** through the Airflow UI:
+1. Start Airflow
    ```bash
-   export GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/service_account.json
+   docker compose up -d
    ```
-2. Run the Airflow DAG:
+2. Navigate to **Admin → Variables**
+3. Create a new variable
+4. Paste the configuration as valid JSON:
+
+Example:
+{
+  "api_key": "your_key",
+  "endpoint": "https://api.example.com",
+  "limit": 100
+}
+
+
+5. Run the Airflow DAG:
    - Start the Airflow scheduler and webserver.
    - Trigger the `etl_pipeline` DAG from the Airflow UI.
+
+6. Open Big Query:
+   - Check the data has been uploaded.
 
 ### Running Tests
 Run the unit tests using pytest:
@@ -68,7 +91,7 @@ pytest
 ```
 
 ## CI/CD
-This project uses GitHub Actions for continuous integration. The workflow is defined in `.github/workflows/ci.yml` and runs tests on every push or pull request to the `main` and `test-pr` branches.
+This project uses GitHub Actions for continuous integration. The workflow is defined in `.github/workflows/ci.yml` and runs tests on every push or pull request to the `master` and `test-pr` branches.
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
