@@ -23,7 +23,7 @@ config = get_config()
 
 API_CONFIG = config["alpha_vantage"]
 BQ_CONFIG = config["bigquery"]
-SLACK_CONFIG = config.get("slack", {})
+SLACK_CONFIG = config["slack"]
 GCP_CREDENTIALS = os.getenv("GCP_CREDENTIALS")
 
 API_ENDPOINT = (
@@ -43,10 +43,14 @@ with DAG(
     catchup=False,
     tags=["ETL"],
     max_active_runs=1,  # Prevent parallel runs
-    on_success_callback=notify_slack_success,
 ) as dag:
+    success_task = PythonOperator(
+        task_id="check_callback_trigger",
+        python_callable=notify_slack_success,
+        op_args=[SLACK_CONFIG["webhook_url"]],
+    )
 
-    extract_task = PythonOperator(
+    """extract_task = PythonOperator(
         task_id="extract",
         python_callable=extract_from_api,
         op_args=[API_ENDPOINT],
@@ -67,6 +71,7 @@ with DAG(
             BQ_CONFIG
         ],
         op_kwargs={"if_exists": "replace"},
-    )
+    )"""
 
-    extract_task >> transform_task >> load_task
+    # extract_task >> transform_task >> load_task
+    success_task

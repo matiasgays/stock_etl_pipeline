@@ -21,11 +21,10 @@ def load_gcp_credentials(gcp_service_account: Union[str, Dict[str, Any]]) -> Dic
 
     return gcp_service_account
 
-def notify_slack_success(context):
+def notify_slack_success(webhook_url):
     """
     Sends a Slack message when the DAG finishes successfully.
     """
-    webhook_url = Variable.get("SLACK_WEBHOOK_URL", default_var=None)
     print("Slack Webhook URL:", webhook_url)
 
     if not webhook_url:
