@@ -4,6 +4,11 @@ import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
+@patch.dict('sys.modules', {
+    'airflow': MagicMock(),
+    'airflow.models': MagicMock(Variable=MagicMock())
+})
+
 from src.stock_etl_pipeline.etl.extract import extract_from_api
 from src.stock_etl_pipeline.etl.transform import transform_market_data
 from src.stock_etl_pipeline.etl.load import load_to_bigquery
