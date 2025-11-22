@@ -7,6 +7,8 @@ import json
 from src.stock_etl_pipeline.etl.extract import extract_from_api
 from src.stock_etl_pipeline.etl.transform import transform_market_data
 from src.stock_etl_pipeline.etl.load import load_to_bigquery
+from src.stock_etl_pipeline.helpers.config import get_config
+from src.stock_etl_pipeline.helpers.utils import notify_slack_success
 from airflow.models import Variable
 
 # Default arguments for the DAG
@@ -17,16 +19,18 @@ default_args = {
     "execution_timeout": timedelta(seconds=300),
 }
 
+config = get_config()
+
+API_CONFIG = config["alpha_vantage"]
+BQ_CONFIG = config["bigquery"]
+SLACK_CONFIG = config.get("slack", {})
 GCP_CREDENTIALS = os.getenv("GCP_CREDENTIALS")
-print(GCP_CREDENTIALS)
-BQ_DATASET_CONFIG = json.loads(os.getenv("STOCK_DATASET_CONFIG"))
-API_CONFIG = json.loads(os.getenv("ALPHA_VANTAGE_CONFIG"))
 
 API_ENDPOINT = (
     f"{API_CONFIG['url']}?function={API_CONFIG['function']}"
     f"&symbol={API_CONFIG['symbol']}"
     f"&interval={API_CONFIG['interval']}"
-    f"&apikey={API_CONFIG['key']}"
+    f"&apikey={API_CONFIG['api_key']}"
 )
 
 # Define the DAG
@@ -39,6 +43,7 @@ with DAG(
     catchup=False,
     tags=["ETL"],
     max_active_runs=1,  # Prevent parallel runs
+    on_success_callback=notify_slack_success,
 ) as dag:
 
     extract_task = PythonOperator(
@@ -59,7 +64,7 @@ with DAG(
         op_args=[
             "{{ ti.xcom_pull('transform') }}",
             GCP_CREDENTIALS,
-            BQ_DATASET_CONFIG
+            BQ_CONFIG
         ],
         op_kwargs={"if_exists": "replace"},
     )

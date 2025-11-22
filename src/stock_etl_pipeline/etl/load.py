@@ -5,6 +5,7 @@ from typing import Optional
 import pandas as pd
 from google.cloud import bigquery
 from google.oauth2 import service_account
+from src.stock_etl_pipeline.helpers.utils import load_gcp_credentials
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -30,16 +31,11 @@ def load_to_bigquery(
     """
 
     # ---- 1. Credentials ----
-  
-    print(gcp_service_account)
-    if isinstance(gcp_service_account, str):
-        gcp_service_account = json.loads(gcp_service_account)
-    
-    gcp_service_account["private_key"] = gcp_service_account["private_key"].replace("\\n", "\n")
+    gcp_service_account_json = load_gcp_credentials(gcp_service_account)
 
-    credentials = service_account.Credentials.from_service_account_info(gcp_service_account)
+    credentials = service_account.Credentials.from_service_account_info(gcp_service_account_json)
     
-    project = gcp_service_account.get("project_id")
+    project = gcp_service_account_json.get("project_id")
     if not project:
         raise ValueError("Service account must include 'project_id'.")
 
