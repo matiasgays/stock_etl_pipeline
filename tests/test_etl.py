@@ -96,7 +96,7 @@ def test_transform_market_data(tmp_json):
 
 
 # ---- Load Tests ----
-@patch("src.stock_etl_pipeline.etl.load.load_gcp_credentials")
+@patch("src.stock_etl_pipeline.etl.helpers.utils.load_gcp_credentials")
 @patch("src.stock_etl_pipeline.etl.load.bigquery.Client")
 @patch("src.stock_etl_pipeline.etl.load.service_account.Credentials.from_service_account_info")
 def test_load_to_bigquery(mock_creds, mock_bq_client, tmp_json):
