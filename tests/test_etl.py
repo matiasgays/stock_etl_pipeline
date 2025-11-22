@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
+import sys
 
 with patch.dict(
     'sys.modules', 
