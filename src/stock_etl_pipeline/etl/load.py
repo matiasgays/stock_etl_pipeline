@@ -5,7 +5,6 @@ from typing import Optional
 import pandas as pd
 from google.cloud import bigquery
 from google.oauth2 import service_account
-from src.stock_etl_pipeline.helpers.utils import load_gcp_credentials
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -13,10 +12,10 @@ logger.setLevel(logging.INFO)
 
 def load_to_bigquery(
     file_path: str,
-    gcp_service_account,
+    gcp_service_account: dict,
     gcp_bigquery_config: dict,
     timeout: Optional[int] = 300,
-) -> int:
+) -> bool:
     """
     Load a JSON file into BigQuery.
 
@@ -31,18 +30,16 @@ def load_to_bigquery(
     """
 
     # ---- 1. Credentials ----
-    gcp_service_account_json = load_gcp_credentials(gcp_service_account)
-
-    credentials = service_account.Credentials.from_service_account_info(gcp_service_account_json)
+    credentials = service_account.Credentials.from_service_account_info(gcp_service_account)
     
-    project = gcp_service_account_json.get("project_id")
+    project = gcp_service_account.get("project_id")
     if not project:
         raise ValueError("Service account must include 'project_id'.")
 
     # ---- 2. BigQuery Config ----
     dataset = gcp_bigquery_config.get("dataset")
     table = gcp_bigquery_config.get("table")
-    location = gcp_bigquery_config.get("location", "US")
+    location = gcp_bigquery_config.get("location")
 
     if not dataset or not table:
         raise ValueError("BigQuery config must include 'dataset' and 'table'.")
@@ -77,15 +74,13 @@ def load_to_bigquery(
     logger.info("Dataset ensured: %s (location=%s)", dataset_id, location)
 
     # ---- 6. Load DataFrame to BigQuery ----
-    job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND)
-    job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
-    job.result(timeout=timeout)
-
-    if job.errors:
+    try:
+        job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND)
+        job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
+        job.result(timeout=timeout)
+        loaded_rows = job.output_rows or 0
+        logger.info("Successfully loaded %d rows into %s", loaded_rows, table_id)
+        return True
+    except Exception as e:
         logger.error("BigQuery Load errors: %s", job.errors)
-        raise RuntimeError(f"Load job failed: {job.errors}")
-
-    loaded_rows = job.output_rows or 0
-    logger.info("Successfully loaded %d rows into %s", loaded_rows, table_id)
-
-    return int(loaded_rows)
+        return False

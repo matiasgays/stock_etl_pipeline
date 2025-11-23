@@ -1,15 +1,12 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-import os
-import json
 
 from src.stock_etl_pipeline.etl.extract import extract_from_api
 from src.stock_etl_pipeline.etl.transform import transform_market_data
 from src.stock_etl_pipeline.etl.load import load_to_bigquery
-from src.stock_etl_pipeline.helpers.config import get_config
-from src.stock_etl_pipeline.helpers.utils import notify_slack_success
-from airflow.models import Variable
+from src.stock_etl_pipeline.utils.config import get_config
+from src.stock_etl_pipeline.utils.slack import notify_slack_success
 
 # Default arguments for the DAG
 default_args = {
@@ -24,7 +21,7 @@ config = get_config()
 API_CONFIG = config["alpha_vantage"]
 BQ_CONFIG = config["bigquery"]
 SLACK_CONFIG = config["slack"]
-GCP_CREDENTIALS = os.getenv("GCP_CREDENTIALS")
+GCP_CREDENTIALS = config["gcp_credentials"]
 
 API_ENDPOINT = (
     f"{API_CONFIG['url']}?function={API_CONFIG['function']}"
@@ -44,13 +41,8 @@ with DAG(
     tags=["ETL"],
     max_active_runs=1,  # Prevent parallel runs
 ) as dag:
-    success_task = PythonOperator(
-        task_id="check_callback_trigger",
-        python_callable=notify_slack_success,
-        op_args=[SLACK_CONFIG["webhook_url"]],
-    )
 
-    """extract_task = PythonOperator(
+    extract_task = PythonOperator(
         task_id="extract",
         python_callable=extract_from_api,
         op_args=[API_ENDPOINT],
@@ -71,7 +63,15 @@ with DAG(
             BQ_CONFIG
         ],
         op_kwargs={"if_exists": "replace"},
-    )"""
+    )
 
-    # extract_task >> transform_task >> load_task
-    success_task
+    success_task = PythonOperator(
+        task_id="success_notification",
+        python_callable=notify_slack_success,
+         op_args=[
+            "{{ ti.xcom_pull('load') }}",
+            SLACK_CONFIG["webhook_url"]
+        ]
+    )
+
+    extract_task >> transform_task >> load_task >> success_task
