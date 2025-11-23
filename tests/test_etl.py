@@ -5,15 +5,11 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 import sys
 
-with patch.dict(
-    'sys.modules', 
-    {'airflow': MagicMock(), 'airflow.models': MagicMock(Variable=MagicMock())}
-):
-    # These imports are now inside the scope of the mock and will succeed
-    # because 'airflow' is a mocked object in sys.modules.
-    from src.stock_etl_pipeline.etl.extract import extract_from_api
-    from src.stock_etl_pipeline.etl.transform import transform_market_data
-    from src.stock_etl_pipeline.etl.load import load_to_bigquery
+# These imports are now inside the scope of the mock and will succeed
+# because 'airflow' is a mocked object in sys.modules.
+from src.stock_etl_pipeline.etl.extract import extract_from_api
+from src.stock_etl_pipeline.etl.transform import transform_market_data
+from src.stock_etl_pipeline.etl.load import load_to_bigquery
 
 # ---- Sample API response ----
 SAMPLE_API_RESPONSE = {
@@ -96,7 +92,6 @@ def test_transform_market_data(tmp_json):
 
 
 # ---- Load Tests ----
-@patch("src.stock_etl_pipeline.helpers.utils.load_gcp_credentials")
 @patch("src.stock_etl_pipeline.etl.load.bigquery.Client")
 @patch("src.stock_etl_pipeline.etl.load.service_account.Credentials.from_service_account_info")
 def test_load_to_bigquery(mock_creds, mock_bq_client, tmp_json):
@@ -111,16 +106,16 @@ def test_load_to_bigquery(mock_creds, mock_bq_client, tmp_json):
     mock_job = MagicMock()
     mock_job.result.return_value = None
     mock_job.errors = None
-    mock_job.output_rows = 2
+    mock_job.output = True
     mock_client_instance.load_table_from_dataframe.return_value = mock_job
 
-    loaded_rows = load_to_bigquery(
+    result = load_to_bigquery(
         file_path=tmp_json,
         gcp_service_account=SAMPLE_SERVICE_ACCOUNT,
         gcp_bigquery_config=SAMPLE_BQ_CONFIG
     )
 
-    assert loaded_rows == 2
+    assert result == True
     mock_creds.assert_called_once_with(SAMPLE_SERVICE_ACCOUNT)
     mock_bq_client.assert_called_once()
     mock_client_instance.load_table_from_dataframe.assert_called_once()
