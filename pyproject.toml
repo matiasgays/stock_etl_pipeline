@@ -3,7 +3,7 @@ name = "stock_etl_pipeline"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "apache-airflow",
     "dotenv>=0.9.9",
