@@ -1,3 +1,15 @@
+"""
+Transform Module for Stock ETL Pipeline
+
+This script reads raw market data JSON from Alpha Vantage, normalizes
+the data, computes derived metrics, and saves the result as JSON.
+
+Function:
+- transform_market_data(input_path: str) -> str
+
+Outputs a normalized, enriched DataFrame in JSON format ready for BigQuery.
+"""
+
 import pandas as pd
 import json
 import logging
@@ -5,6 +17,7 @@ import logging
 # ---- Setup logger ----
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 def transform_market_data(input_path: str) -> str:
     """

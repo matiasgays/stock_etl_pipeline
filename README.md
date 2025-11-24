@@ -321,15 +321,47 @@ Runs unit tests for extract, transform, and load stages.
 
 # 🏗️ Architecture
 
-```
-extract → transform → load → slack_notification
-```
+                  ┌─────────────────────┐
+                  │   start_pipeline    │
+                  └───────────┬─────────┘
+                              │
+                              ▼
+                  ┌─────────────────────┐
+                  │   load_config       │
+                  │ (reads .env / SA)   │
+                  └───────────┬─────────┘
+                              │
+                              ▼
+               ┌───────────────────────────┐
+               │     extract_stock_data     │
+               └─────────────┬─────────────┘
+                             │
+                             ▼
+               ┌───────────────────────────┐
+               │   transform_stock_data     │
+               └─────────────┬─────────────┘
+                             │
+                             ▼
+               ┌───────────────────────────┐
+               │      load_to_bigquery      │
+               └─────────────┬─────────────┘
+                             │
+                             ▼
+               ┌───────────────────────────┐
+               │ send_slack_notification    │
+               └─────────────┬─────────────┘
+                             │
+                             ▼
+                  ┌─────────────────────┐
+                  │     end_pipeline     │
+                  └─────────────────────┘
 
-- **extract.py:** Calls Alpha Vantage  
-- **transform.py:** Normalizes and reshapes stock data  
-- **load.py:** Validates and writes into BigQuery  
-- **slack.py:** Sends success message to Slack  
-- **config.py:** Unified config loader with validation  
+
+- **extract_stock_data:** Calls Alpha Vantage  
+- **transform_stock_data:** Normalizes and reshapes stock data  
+- **load_to_bigquery:** Validates and writes into BigQuery  
+- **send_slack_notification:** Sends success message to Slack  
+- **load_config:** Unified config loader with validation  
 
 ---
 
@@ -379,6 +411,89 @@ This allows flexible deployment across **local**, **CI/CD**, or **Cloud Composer
 | Airflow Variable | .env Variable | Default | Description |
 |------------------|--------------|-------------|-------------|
 | `slack_webhook_url` | `SLACK_WEBHOOK_URL` | `------` | Slack URL |
+
+## Workflow
+
+                         ┌─────────────────────────────┐
+                         │        config.py             │
+                         │    get_config() loader       │
+                         └──────────────┬──────────────┘
+                                        │
+                                        │
+                     ┌──────────────────┴──────────────────┐
+                     │                                     │
+                     ▼                                     ▼
+        ┌─────────────────────────┐             ┌──────────────────────────┐
+        │     API / BQ / Slack    │             │     GCP Credentials      │
+        │   (normal variables)    │             │        (special case)    │
+        └──────────────┬──────────┘             └──────────────┬──────────┘
+                       │                                        │
+                       │                                        │
+                       ▼                                        ▼
+        ┌─────────────────────────┐             ┌────────────────────────────────────┐
+        │ Airflow Variable exists?│──Yes──────▶ │ Use Airflow variable value        │
+        └──────────────┬──────────┘             └────────────────────────────────────┘
+                       │
+                    No │
+                       ▼
+        ┌─────────────────────────┐
+        │ .env variable exists?   │──Yes──────▶ Use .env value
+        └──────────────┬──────────┘
+                       │
+                    No │
+                       ▼
+             Use internal default
+
+
+──────────────────────────────────────────────────────────────────────────────
+
+                       GCP CREDENTIALS SPECIAL WORKFLOW
+──────────────────────────────────────────────────────────────────────────────
+
+                                   ┌────────────────────────────────────────┐
+                                   │   _load_gcp_credentials(gcp_value)     │
+                                   └────────────────────┬───────────────────┘
+                                                        │
+                                                        ▼
+                         ┌────────────────────────────────────────────────┐
+                         │ 1. Airflow Variable "gcp_credentials_json"?    │
+                         │    (Raw JSON pasted in UI)                     │
+                         └───────────────┬────────────────────────────────┘
+                                         │ Yes
+                                         ▼
+                            Use embedded JSON (highest priority)
+
+
+                                         │ No
+                                         ▼
+                     ┌────────────────────────────────────────────────────────┐
+                     │ 2. .env → GCP_CREDENTIALS points to a file path?       │
+                     └───────────────┬────────────────────────────────────────┘
+                                     │ Yes
+                                     ▼
+                     Load file → Validate JSON → Normalize private_key → OK
+
+
+                                     │ No
+                                     ▼
+                     ┌────────────────────────────────────────────────────────┐
+                     │ 3. FAIL → Missing credentials                          │
+                     │ Raises ValueError with instructions on fixing config  │
+                     └────────────────────────────────────────────────────────┘
+
+──────────────────────────────────────────────────────────────────────────────
+
+                                     FINAL OUTPUT
+──────────────────────────────────────────────────────────────────────────────
+
+get_config() returns:
+
+{
+  "alpha_vantage": {...},
+  "bigquery": {...},
+  "slack": {...},
+  "gcp_credentials": {validated JSON}
+}
 
 ---
 

@@ -1,3 +1,13 @@
+"""
+BigQuery Loader for Stock ETL Pipeline
+
+This module provides a function to load JSON or transformed DataFrame data
+into Google BigQuery using a validated GCP Service Account.
+
+Modules/Functions:
+- load_to_bigquery(): Load a JSON file into a specified BigQuery table
+"""
+
 import json
 import logging
 from typing import Optional
@@ -6,6 +16,7 @@ import pandas as pd
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
+# Initialize logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -19,14 +30,25 @@ def load_to_bigquery(
     """
     Load a JSON file into BigQuery.
 
+    Steps:
+    1. Load GCP credentials from the service account dict
+    2. Validate BigQuery config: dataset, table, location
+    3. Read JSON into a Pandas DataFrame
+    4. Normalize the 'timestamp' column (if present)
+    5. Ensure the dataset exists
+    6. Load DataFrame into BigQuery
+
     Args:
-        file_path: Path to the JSON file.
-        gcp_service_account: Dict with service account credentials.
-        gcp_bigquery_config: Dict with 'dataset', 'table', and optional 'location'.
-        timeout: Job timeout in seconds.
+        file_path: Path to the JSON file containing stock data.
+        gcp_service_account: Dictionary with GCP Service Account credentials.
+        gcp_bigquery_config: Dictionary with keys 'dataset', 'table', and optional 'location'.
+        timeout: Job timeout in seconds (default: 300).
 
     Returns:
-        Number of rows loaded.
+        True if the load succeeded, False otherwise.
+
+    Raises:
+        ValueError if required GCP credentials or BigQuery config is missing.
     """
 
     # ---- 1. Credentials ----
@@ -56,8 +78,7 @@ def load_to_bigquery(
 
     df = pd.DataFrame(records)
     
-    # 1. Convert the original string column to Pandas datetime64[ns]
-    # 'format=TIME_FORMAT' forces Pandas to use a specific parsing method.
+    # ---- 3a. Normalize timestamp ----
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         df = df.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
@@ -82,5 +103,5 @@ def load_to_bigquery(
         logger.info("Successfully loaded %d rows into %s", loaded_rows, table_id)
         return True
     except Exception as e:
-        logger.error("BigQuery Load errors: %s", job.errors)
+        logger.error("BigQuery Load errors: %s", getattr(job, "errors", e))
         return False
