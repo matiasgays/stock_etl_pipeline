@@ -1,34 +1,32 @@
-# Stock ETL Pipeline
+# 📈 Stock ETL Pipeline
 
-A production-ready ETL pipeline built with **Apache Airflow**, designed to:
+A **production-ready ETL pipeline** built with **Apache Airflow**, fully Dockerized and designed to:
 
-- Extract stock market data from **Alpha Vantage**
-- Transform and standardize timestamps and metrics
-- Load records into **Google BigQuery**
-- Notify success via **Slack webhook**
-- Use secure, validated configuration via `.env` or Airflow Variables
-
-This project is fully Dockerized and optimized for production use.
+- 🔵 **Extract** stock market data from **Alpha Vantage**  
+- 🟢 **Transform** and standardize timestamps + compute financial metrics  
+- 🔴 **Load** the results into **Google BigQuery**  
+- 📣 **Notify** via Slack webhook  
+- 🔐 **Securely manage configuration** via `.env` or Airflow Variables  
 
 ---
 
 ## 🚀 Features
 
 ### 🟦 Data Extraction  
-Fetch Time Series Stock Data from Alpha Vantage API.
+Retrieve Time Series Stock Data using the Alpha Vantage API.
 
 ### 🟩 Data Transformation  
-Normalize and compute financial metrics:  
+Clean and prepare the raw data, including:
 - Moving averages  
 - Volatility  
-- Minute-level consistency corrections  
-- Clean column formatting  
+- Minute-level corrections  
+- Column normalization  
 
 ### 🟥 Data Loading  
-Write structured data into BigQuery using a validated GCP Service Account.
+Insert validated, well-structured data into **BigQuery** using a secure GCP Service Account.
 
 ### ⚙️ Airflow DAG  
-Daily orchestrated pipeline with task-by-task logic:
+Daily scheduled pipeline:
 
 ```
 extract → transform → load → slack_notification
@@ -36,16 +34,77 @@ extract → transform → load → slack_notification
 
 ---
 
+# 📦 Requirements
+
+To run this project in **local**, **Docker**, or **CI/CD**, ensure you meet the following:
+
+## 🔧 System Requirements
+- **Docker** ≥ 20+
+- **Docker Compose** ≥ v2+
+- **Python** ≥ 3.10 (only required for running tests locally)
+- **Git** ≥ 2.0
+
+---
+
+## 🐍 Python Dependencies
+
+Defined in `requirements.txt`:
+
+```
+apache-airflow==2.10.1
+pandas>=2.0.0
+requests>=2.31.0
+google-cloud-bigquery>=3.15.0
+google-auth>=2.25.0
+slack_sdk>=3.27.0
+pytest>=8.0.0
+python-dotenv>=1.0.1
+```
+
+---
+
+## ⭐ API & Platform Requirements
+
+### 📊 Alpha Vantage
+- A valid **Alpha Vantage API key**
+- Free tier works for daily/minute data (limited)
+- Paid tier recommended for reliable intraday queries
+
+### 🟨 Google Cloud (BigQuery)
+You need:
+
+- A **GCP Project**
+- A **BigQuery Dataset**
+- A **Service Account** with either:
+  - **Recommended:** `BigQuery Admin`
+  - **Minimum roles:**
+    - `BigQuery Data Editor`
+    - `BigQuery Job User`
+
+### 💬 Slack
+- A Slack workspace
+- An **Incoming Webhook URL**
+
+---
+
 # 🚀 Quick Start
 
-### 1. Clone the repo
+## 1️⃣ Clone the repo
 
 ```bash
 git clone https://github.com/your-repo
 cd stock-etl
+
+```
+## 2️⃣ Install dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-### 2. Configure environment variables
+## 3️⃣ Configure environment variables
 
 Copy `.env.example` to `.env`:
 
@@ -53,38 +112,155 @@ Copy `.env.example` to `.env`:
 cp .env.example .env
 ```
 
-Your `.env` already includes all required variables:
+Your `.env` already includes all default variables:
 
 ```env
 # Airflow
 AIRFLOW_UID=1000
 
-# GCP Service Account (path to JSON file)
-GCP_CREDENTIALS=/opt/airflow/dags/resources/gcp_credentials.json
-
 # Defaults (used only if Airflow Variables are not set)
-DEFAULT_STOCK_SYMBOL=IBM
-DEFAULT_ALPHA_VANTAGE_KEY=demo
-DEFAULT_ALPHA_VANTAGE_INTERVAL=5min
-DEFAULT_ALPHA_VANTAGE_FUNCTION=TIME_SERIES_INTRADAY
-DEFAULT_ALPHA_VANTAGE_URL=https://www.alphavantage.co/query
-DEFAULT_DATASET_NAME=time_series_stock_dataset
-DEFAULT_TABLE_NAME=IBM
-DEFAULT_DATASET_LOCATION=US
-DEFAULT_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+STOCK_SYMBOL=IBM
+ALPHA_VANTAGE_KEY=demo
+ALPHA_VANTAGE_INTERVAL=5min
+ALPHA_VANTAGE_FUNCTION=TIME_SERIES_INTRADAY
+ALPHA_VANTAGE_URL=https://www.alphavantage.co/query
+DATASET_NAME=time_series_stock_dataset
+TABLE_NAME=IBM
+DATASET_LOCATION=US
 ```
-
-If you place your GCP JSON in:
-
-```
-dags/resources/gcp_credentials.json
-```
-
-Airflow will automatically detect it and validate it.
 
 ---
 
-### 3.1 Running Airflow
+## 4️⃣ Set Up Google Cloud Service Account (GCP)
+
+Your BigQuery loader requires a **Service Account** with a **JSON key**.
+
+### **Step 1 — Open GCP Console**  
+https://console.cloud.google.com/
+
+### **Step 2 — Navigate to:**  
+**IAM & Admin → Service Accounts**
+
+### **Step 3 — Create New Service Account**
+- **Name:** `your-name`
+- **Recommended Role:** `BigQuery Admin`  
+- **Minimal Roles (if you prefer least privilege):**
+  - `BigQuery Data Editor`
+  - `BigQuery Job User`
+
+### **Step 4 — Create Key → JSON**
+Download the JSON file.
+
+---
+
+### **Step 5 — Choose a configuration method**
+
+The `config.py` supports 2 ways to load the Service Account JSON.
+
+The pipeline validates:
+
+- presence of required keys  
+- correct PEM format  
+- JSON structure  
+
+---
+
+#### **Option A — Store JSON directly in Airflow**
+
+Go to:
+
+```
+Airflow → Admin → Variables
+```
+
+Create:
+| Key                   | Value                     |
+|----------------------|---------------------------|
+| `gcp_credentials_json` | JSON contents (copy/paste full service account) |
+
+Example: 
+```json
+{
+  "type": "service_account",
+  "project_id": "your-project",
+  "private_key_id": "...",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nabc...\n-----END PRIVATE KEY-----\n",
+  "client_email": "your-sa@project.iam.gserviceaccount.com",
+  "client_id": "...",
+  "auth_uri": "...",
+  "token_uri": "...",
+  "auth_provider_x509_cert_url": "...",
+  "client_x509_cert_url": "..."
+}
+```
+
+No need to mount files into containers.
+
+---
+
+#### **Option B — Store JSON file locally and reference via .env**
+
+Add to `.env`:
+
+```
+GCP_CREDENTIALS=/opt/airflow/*(your path)*
+```
+Example:
+```
+/opt/airflow/config/gcp_credentials.json
+```
+
+Place the JSON contents (copy/paste full service account) in your path.
+Example:
+
+```
+config/gcp_credentials.json
+```
+
+This is perfect for local development.
+
+---
+
+## 5️⃣ Setup Slack Webhook
+
+This pipeline sends a Slack message when the ETL completes successfully.
+
+### **Step 1 — Visit Slack API**  
+https://api.slack.com/apps
+
+### **Step 2 — Create New App → “From Scratch”**
+
+### **Step 3 — Enable Incoming Webhooks**  
+Left sidebar → **Incoming Webhooks → ON**
+
+### **Step 4 — Add Webhook to a Channel**  
+Slack generates a URL like:
+https://hooks.slack.com/services/XXX/YYY/ZZZ
+
+### **Step 5 — Choose a configuration method**
+
+#### **Option A — Paste URL into Airflow Variables**  
+Airflow UI → **Admin → Variables**
+
+| Key                   | Value                     |
+|----------------------|---------------------------|
+| `slack_webhook_url` | *(paste the url here)* |
+
+The DAG will send a message on success.
+
+---
+
+#### **Option B — Store the de URL locally**
+
+Add to `.env`:
+
+```
+SLACK_WEBHOOK_URL= *(paste the url here)*
+```
+
+---
+
+## 6️⃣ Running Airflow
 
 ### Start the environment:
 
@@ -104,7 +280,7 @@ http://localhost:8080
 
 ---
 
-### 3.2 Testing
+## 🧪 Testing
 
 ```bash
 pytest
@@ -129,7 +305,7 @@ Runs unit tests for extract, transform, and load stages.
 │   └── __init__.py
 ├── dags/
 │   ├── etl_dag.py           # Airflow DAG definition
-├── dags/resources/
+├── config/
 │   └── gcp_credentials.json # Optional location for Service Account JSON
 ├── tests/
 │   ├── test_etl.py
@@ -157,7 +333,7 @@ extract → transform → load → slack_notification
 
 ---
 
-# ⚙️ Configuration System (IMPORTANT)
+# ⚙️ Configuration System
 
 The pipeline pulls configuration in this priority order:
 
@@ -171,7 +347,7 @@ This allows flexible deployment across **local**, **CI/CD**, or **Cloud Composer
 
 ---
 
-## 🔐 1. Required Airflow Variables / Environment Variables
+## Variables
 
 ### ### Alpha Vantage
 | Airflow Variable | .env Variable | Default | Description |
@@ -194,99 +370,15 @@ This allows flexible deployment across **local**, **CI/CD**, or **Cloud Composer
 |------------------|--------------|-------------|-------------|
 | `------` | `AIRFLOW_UID` | `0` | Airflow UID variable dataset |
 
----
+### ### GCP Service account
+| Airflow Variable | .env Variable | Default | Description |
+|------------------|--------------|-------------|-------------|
+| `gcp_credentials_json` | `GCP_CREDENTIALS` | `------` | GCP service account JSON |
 
-# 🟨 GCP SERVICE ACCOUNT — 2 VALID OPTIONS
-
-The `config.py` supports 2 ways to load the Service Account JSON.
-
-The pipeline validates:
-
-- presence of required keys  
-- correct PEM format  
-- JSON structure  
-
----
-
-## **OPTION 1 — Store JSON directly in Airflow**
-
-Go to:
-
-```
-Airflow → Admin → Variables
-```
-
-Create:
-
-**Key:** `gcp_credentials_json`  
-**Value:** JSON contents (copy/paste full service account)
-
-Example: 
-```json
-{
-  "type": "service_account",
-  "project_id": "your-project",
-  "private_key_id": "...",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nabc...\n-----END PRIVATE KEY-----\n",
-  "client_email": "your-sa@project.iam.gserviceaccount.com",
-  "client_id": "...",
-  "auth_uri": "...",
-  "token_uri": "...",
-  "auth_provider_x509_cert_url": "...",
-  "client_x509_cert_url": "..."
-}
-```
-
-No need to mount files into containers.
-
----
-
-## **OPTION 2 — Store JSON file locally and reference via .env**
-
-Add to `.env`:
-
-```
-GCP_CREDENTIALS=/opt/airflow/dags/resources/gcp_credentials.json
-```
-
-Place the JSON contents (copy/paste full service account) here locally:
-
-```
-dags/resources/gcp_credentials.json
-```
-
-This is perfect for local development.
-
----
-
-# 🔔 Slack Notifications
-
-The DAG includes a task:
-
-```
-success_notification
-```
-
-Handled by:
-
-- `utils/slack.py`
-
-To enable Slack:
-
-Add to `.env`:
-
-```
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
-```
-
-Or create Airflow Variable:
-
-```
-Key: slack_webhook_url
-Value: https://hooks.slack.com/services/...
-```
-
-The DAG will send a message on success.
+### ### Slack
+| Airflow Variable | .env Variable | Default | Description |
+|------------------|--------------|-------------|-------------|
+| `slack_webhook_url` | `SLACK_WEBHOOK_URL` | `------` | Slack URL |
 
 ---
 
@@ -301,7 +393,10 @@ The DAG will send a message on success.
 # 🛠️ Troubleshooting
 
 ### ❌ GCP credentials missing  
-Ensure:
+Check:
+
+- Airflow Variable: `gcp_credentials`
+- OR ensure:
 
 ```
 /opt/airflow/dags/resources/gcp_credentials.json
